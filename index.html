@@ -4,7 +4,7 @@ index.html
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clash Mini Prototype - Avec Tank</title>
+  <title>Clash Mini Prototype - Victoire</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -96,7 +96,7 @@ index.html
   </style>
 </head>
 <body>
-  <h1>Clash Mini Lite - Avec Tank</h1>
+  <h1>Clash Mini Lite - Système de Victoire</h1>
   <div id="units">
     <button onclick="selectUnit('guerrier')">Guerrier</button>
     <button onclick="selectUnit('archer')">Archer</button>
@@ -219,7 +219,29 @@ index.html
           }
         }
       }
+
       log('Combat terminé !');
+
+      // Nouveau : compter survivants
+      let playerCount = 0;
+      let aiCount = 0;
+      for (let i = 0; i < 30; i++) {
+        const row = Math.floor(i / 6);
+        if (board[i]) {
+          if (row < 2) playerCount++;
+          else if (row > 2) aiCount++;
+        }
+      }
+
+      log(`Unités restantes - Joueur: ${playerCount}, IA: ${aiCount}`);
+
+      if (playerCount > aiCount) {
+        log('✅ Victoire du Joueur ! 🎉');
+      } else if (aiCount > playerCount) {
+        log('❌ Victoire de l\'IA !');
+      } else {
+        log('⚔️ Match nul !');
+      }
     }
 
     function getZoneClass(row) {
