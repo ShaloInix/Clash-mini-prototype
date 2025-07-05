@@ -4,7 +4,7 @@ index.html
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clash Mini Prototype - Victoire</title>
+  <title>Clash Mini Prototype - Tour par tour & Energie</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,6 +17,10 @@ index.html
     h1 {
       margin-bottom: 10px;
       font-size: 1.8em;
+    }
+    #energy {
+      margin: 10px;
+      font-size: 1.2em;
     }
     #grid {
       display: grid;
@@ -87,7 +91,7 @@ index.html
       margin-top: 20px;
       background: #222;
       padding: 10px;
-      height: 120px;
+      height: 140px;
       overflow-y: auto;
       text-align: left;
       border-radius: 6px;
@@ -96,12 +100,12 @@ index.html
   </style>
 </head>
 <body>
-  <h1>Clash Mini Lite - Système de Victoire</h1>
+  <h1>Clash Mini Lite - Tour par tour & Energie</h1>
+  <div id="energy">Énergie Joueur: 10 ⚡️ | Énergie IA: 10 ⚡️</div>
   <div id="units">
-    <button onclick="selectUnit('guerrier')">Guerrier</button>
-    <button onclick="selectUnit('archer')">Archer</button>
-    <button onclick="selectUnit('tank')">Tank</button>
-    <button onclick="startBattle()">Lancer le combat</button>
+    <button onclick="selectUnit('guerrier')">Guerrier (3⚡️)</button>
+    <button onclick="selectUnit('archer')">Archer (4⚡️)</button>
+    <button onclick="selectUnit('tank')">Tank (5⚡️)</button>
   </div>
   <div id="grid"></div>
   <div id="log"></div>
@@ -109,13 +113,16 @@ index.html
   <script>
     const grid = document.getElementById('grid');
     const logDiv = document.getElementById('log');
+    const energyDiv = document.getElementById('energy');
     let selectedUnit = null;
     let board = [];
+    let playerEnergy = 10;
+    let aiEnergy = 10;
 
     const unitStats = {
-      guerrier: { hp: 10, attack: 3 },
-      archer: { hp: 6, attack: 5 },
-      tank: { hp: 20, attack: 2 }
+      guerrier: { hp: 10, attack: 3, cost: 3 },
+      archer: { hp: 6, attack: 5, cost: 4 },
+      tank: { hp: 20, attack: 2, cost: 5 }
     };
 
     // Build grid 6x5 = 30 cases avec zones
@@ -138,9 +145,13 @@ index.html
       board.push(null);
     }
 
+    function updateEnergyDisplay() {
+      energyDiv.textContent = `Énergie Joueur: ${playerEnergy} ⚡️ | Énergie IA: ${aiEnergy} ⚡️`;
+    }
+
     function selectUnit(type) {
       selectedUnit = type;
-      log(`Sélectionné : ${type}`);
+      log(`Sélectionné : ${type} (${unitStats[type].cost}⚡️)`);
     }
 
     function placeUnit(index) {
@@ -154,45 +165,77 @@ index.html
         log('Sélectionne d\'abord une unité !');
         return;
       }
+
+      const cost = unitStats[selectedUnit].cost;
+      if (playerEnergy < cost) {
+        log('Pas assez d\'énergie pour placer cette unité !');
+        return;
+      }
+
       if (board[index]) {
         log('Cellule occupée !');
         return;
       }
+
       board[index] = { type: selectedUnit, hp: unitStats[selectedUnit].hp };
       const cell = grid.children[index];
       cell.classList.add(selectedUnit);
       cell.textContent = selectedUnit[0].toUpperCase();
-      log(`Placé ${selectedUnit} en cellule ${index}`);
-    }
+      playerEnergy -= cost;
+      log(`Placé ${selectedUnit} en cellule ${index}. Énergie restante: ${playerEnergy} ⚡️`);
+      updateEnergyDisplay();
 
-    function populateAI() {
-      log('L\'IA place ses unités...');
-      for (let i = 0; i < 30; i++) {
-        const row = Math.floor(i / 6);
-        if (row >= 3 && !board[i]) {
-          if (Math.random() < 0.5) {
-            const rand = Math.random();
-            let type;
-            if (rand < 0.33) {
-              type = 'guerrier';
-            } else if (rand < 0.66) {
-              type = 'archer';
-            } else {
-              type = 'tank';
-            }
-            board[i] = { type: type, hp: unitStats[type].hp };
-            const cell = grid.children[i];
-            cell.classList.add(type, 'enemy');
-            cell.textContent = type[0].toUpperCase();
-          }
-        }
+      aiTurn();
+
+      if (playerEnergy <= 0 && aiEnergy <= 0) {
+        log('Plus d\'énergie. Lancement du combat...');
+        startBattle();
       }
     }
 
-    function startBattle() {
-      log('=== PHASE IA ===');
-      populateAI();
+    function aiTurn() {
+      if (aiEnergy <= 0) {
+        log('IA n\'a plus d\'énergie.');
+        return;
+      }
 
+      // Choisir une unité aléatoire que l'IA peut se payer
+      let affordable = Object.keys(unitStats).filter(u => unitStats[u].cost <= aiEnergy);
+      if (affordable.length === 0) {
+        log('IA ne peut plus placer d\'unités.');
+        aiEnergy = 0;
+        updateEnergyDisplay();
+        return;
+      }
+
+      const type = affordable[Math.floor(Math.random() * affordable.length)];
+      const cost = unitStats[type].cost;
+
+      // Trouver une case libre dans la zone IA
+      const aiCells = [];
+      for (let i = 0; i < 30; i++) {
+        const row = Math.floor(i / 6);
+        if (row >= 3 && !board[i]) aiCells.push(i);
+      }
+
+      if (aiCells.length === 0) {
+        log('IA n\'a plus de place.');
+        aiEnergy = 0;
+        updateEnergyDisplay();
+        return;
+      }
+
+      const idx = aiCells[Math.floor(Math.random() * aiCells.length)];
+      board[idx] = { type: type, hp: unitStats[type].hp };
+      const cell = grid.children[idx];
+      cell.classList.add(type, 'enemy');
+      cell.textContent = type[0].toUpperCase();
+      aiEnergy -= cost;
+      log(`IA a placé ${type} en cellule ${idx}. Énergie restante IA: ${aiEnergy} ⚡️`);
+      updateEnergyDisplay();
+    }
+
+    function startBattle() {
       log('=== COMBAT ===');
       for (let row = 0; row < 5; row++) {
         for (let col = 0; col < 6; col++) {
@@ -222,7 +265,7 @@ index.html
 
       log('Combat terminé !');
 
-      // Nouveau : compter survivants
+      // Comptage des survivants
       let playerCount = 0;
       let aiCount = 0;
       for (let i = 0; i < 30; i++) {
@@ -254,6 +297,8 @@ index.html
       logDiv.innerHTML += `<div>> ${message}</div>`;
       logDiv.scrollTop = logDiv.scrollHeight;
     }
+
+    updateEnergyDisplay();
   </script>
 </body>
 </html>
