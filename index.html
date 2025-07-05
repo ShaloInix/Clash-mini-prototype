@@ -4,7 +4,7 @@ index.html
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clash Mini Prototype - Phase 2 UI Améliorée</title>
+  <title>Clash Mini Prototype - Ligne Neutre</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -54,6 +54,15 @@ index.html
     .enemy {
       border: 2px dashed #dc3545;
     }
+    .player-zone {
+      background-color: rgba(40, 167, 69, 0.15);
+    }
+    .ai-zone {
+      background-color: rgba(220, 53, 69, 0.15);
+    }
+    .neutral-zone {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
     #units {
       margin: 15px;
     }
@@ -81,16 +90,10 @@ index.html
       border-radius: 6px;
       font-size: 0.95em;
     }
-    .player-zone {
-      background-color: rgba(40, 167, 69, 0.15);
-    }
-    .ai-zone {
-      background-color: rgba(220, 53, 69, 0.15);
-    }
   </style>
 </head>
 <body>
-  <h1>Clash Mini Lite - Phase 2 : UI améliorée</h1>
+  <h1>Clash Mini Lite - Ligne Neutre</h1>
   <div id="units">
     <button onclick="selectUnit('guerrier')">Guerrier</button>
     <button onclick="selectUnit('archer')">Archer</button>
@@ -110,16 +113,20 @@ index.html
       archer: { hp: 6, attack: 5 }
     };
 
-    // Build grid 6x5 = 30 cases
+    // Build grid 6x5 = 30 cases avec zones
     for (let i = 0; i < 30; i++) {
       const cell = document.createElement('div');
       cell.className = 'cell';
       const row = Math.floor(i / 6);
-      if (row < 3) {
+
+      if (row < 2) {
         cell.classList.add('player-zone');
+      } else if (row === 2) {
+        cell.classList.add('neutral-zone');
       } else {
         cell.classList.add('ai-zone');
       }
+
       cell.dataset.index = i;
       cell.addEventListener('click', () => placeUnit(i));
       grid.appendChild(cell);
@@ -133,8 +140,8 @@ index.html
 
     function placeUnit(index) {
       const row = Math.floor(index / 6);
-      if (row >= 3) {
-        log('Zone ennemie ! Tu ne peux pas placer ici.');
+      if (row >= 2) {
+        log('Zone interdite ! Tu ne peux pas placer ici.');
         return;
       }
 
@@ -188,16 +195,24 @@ index.html
             log(`Combat en colonne ${col} : ${unit.type} vs ${enemy.type}`);
             if (unit.hp <= 0) {
               board[idx] = null;
-              grid.children[idx].className = 'cell player-zone';
+              grid.children[idx].className = 'cell';
+              grid.children[idx].classList.add(getZoneClass(Math.floor(idx / 6)));
             }
             if (enemy.hp <= 0) {
               board[enemyIdx] = null;
-              grid.children[enemyIdx].className = 'cell ai-zone';
+              grid.children[enemyIdx].className = 'cell';
+              grid.children[enemyIdx].classList.add(getZoneClass(Math.floor(enemyIdx / 6)));
             }
           }
         }
       }
       log('Combat terminé !');
+    }
+
+    function getZoneClass(row) {
+      if (row < 2) return 'player-zone';
+      if (row === 2) return 'neutral-zone';
+      return 'ai-zone';
     }
 
     function log(message) {
