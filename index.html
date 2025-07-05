@@ -4,7 +4,7 @@ index.html
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clash Mini Prototype - PV visibles</title>
+  <title>Clash Mini Prototype - Nouvelle Partie + Timer</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -18,7 +18,7 @@ index.html
       margin-bottom: 10px;
       font-size: 1.8em;
     }
-    #energy {
+    #energy, #timer {
       margin: 10px;
       font-size: 1.2em;
     }
@@ -51,30 +51,14 @@ index.html
     .cell:hover {
       background-color: #444;
     }
-    .guerrier {
-      background-color: #28a745;
-    }
-    .archer {
-      background-color: #fd7e14;
-    }
-    .tank {
-      background-color: #6f42c1;
-    }
-    .enemy {
-      border: 2px dashed #dc3545;
-    }
-    .player-zone {
-      background-color: rgba(40, 167, 69, 0.15);
-    }
-    .ai-zone {
-      background-color: rgba(220, 53, 69, 0.15);
-    }
-    .neutral-zone {
-      background-color: rgba(255, 255, 255, 0.05);
-    }
-    #units {
-      margin: 15px;
-    }
+    .guerrier { background-color: #28a745; }
+    .archer { background-color: #fd7e14; }
+    .tank { background-color: #6f42c1; }
+    .enemy { border: 2px dashed #dc3545; }
+    .player-zone { background-color: rgba(40, 167, 69, 0.15); }
+    .ai-zone { background-color: rgba(220, 53, 69, 0.15); }
+    .neutral-zone { background-color: rgba(255, 255, 255, 0.05); }
+    #units { margin: 15px; }
     button {
       padding: 10px 20px;
       margin: 5px;
@@ -86,9 +70,7 @@ index.html
       font-size: 1em;
       transition: background-color 0.2s ease;
     }
-    button:hover {
-      background-color: #0056b3;
-    }
+    button:hover { background-color: #0056b3; }
     #log {
       margin-top: 20px;
       background: #222;
@@ -102,12 +84,14 @@ index.html
   </style>
 </head>
 <body>
-  <h1>Clash Mini Lite - PV visibles</h1>
+  <h1>Clash Mini Lite - Nouvelle Partie + Timer</h1>
   <div id="energy">Énergie Joueur: 10 ⚡️ | Énergie IA: 10 ⚡️</div>
+  <div id="timer">Temps restant : -</div>
   <div id="units">
     <button onclick="selectUnit('guerrier')">Guerrier (3⚡️)</button>
     <button onclick="selectUnit('archer')">Archer (4⚡️)</button>
     <button onclick="selectUnit('tank')">Tank (5⚡️)</button>
+    <button onclick="startNewGame()">Nouvelle Partie</button>
   </div>
   <div id="grid"></div>
   <div id="log"></div>
@@ -116,10 +100,14 @@ index.html
     const grid = document.getElementById('grid');
     const logDiv = document.getElementById('log');
     const energyDiv = document.getElementById('energy');
+    const timerDiv = document.getElementById('timer');
     let selectedUnit = null;
     let board = [];
     let playerEnergy = 10;
     let aiEnergy = 10;
+    let timer = 15;
+    let timerInterval = null;
+    let gameActive = false;
 
     const unitStats = {
       guerrier: { hp: 10, attack: 3, cost: 3 },
@@ -127,30 +115,36 @@ index.html
       tank: { hp: 20, attack: 2, cost: 5 }
     };
 
-    for (let i = 0; i < 30; i++) {
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      const row = Math.floor(i / 6);
-
-      if (row < 2) {
-        cell.classList.add('player-zone');
-      } else if (row === 2) {
-        cell.classList.add('neutral-zone');
-      } else {
-        cell.classList.add('ai-zone');
+    function initGrid() {
+      grid.innerHTML = '';
+      board = [];
+      for (let i = 0; i < 30; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        const row = Math.floor(i / 6);
+        if (row < 2) cell.classList.add('player-zone');
+        else if (row === 2) cell.classList.add('neutral-zone');
+        else cell.classList.add('ai-zone');
+        cell.dataset.index = i;
+        cell.addEventListener('click', () => placeUnit(i));
+        grid.appendChild(cell);
+        board.push(null);
       }
-
-      cell.dataset.index = i;
-      cell.addEventListener('click', () => placeUnit(i));
-      grid.appendChild(cell);
-      board.push(null);
     }
 
     function updateEnergyDisplay() {
       energyDiv.textContent = `Énergie Joueur: ${playerEnergy} ⚡️ | Énergie IA: ${aiEnergy} ⚡️`;
     }
 
+    function updateTimerDisplay() {
+      timerDiv.textContent = `Temps restant : ${timer}s`;
+    }
+
     function selectUnit(type) {
+      if (!gameActive) {
+        log('Lance une nouvelle partie pour commencer !');
+        return;
+      }
       selectedUnit = type;
       log(`Sélectionné : ${type} (${unitStats[type].cost}⚡️)`);
     }
@@ -166,86 +160,107 @@ index.html
     }
 
     function placeUnit(index) {
+      if (!gameActive) {
+        log('La partie n\'a pas commencé ! Appuie sur Nouvelle Partie.');
+        return;
+      }
       const row = Math.floor(index / 6);
       if (row >= 2) {
-        log('Zone interdite ! Tu ne peux pas placer ici.');
+        log('Zone interdite !');
         return;
       }
-
       if (!selectedUnit) {
-        log('Sélectionne d\'abord une unité !');
+        log('Sélectionne une unité !');
         return;
       }
-
       const cost = unitStats[selectedUnit].cost;
       if (playerEnergy < cost) {
-        log('Pas assez d\'énergie pour placer cette unité !');
+        log('Pas assez d\'énergie !');
         return;
       }
-
       if (board[index]) {
         log('Cellule occupée !');
         return;
       }
-
       board[index] = { type: selectedUnit, hp: unitStats[selectedUnit].hp };
       const cell = grid.children[index];
       cell.classList.add(selectedUnit);
       updateCellDisplay(index);
       playerEnergy -= cost;
-      log(`Placé ${selectedUnit} en cellule ${index}. Énergie restante: ${playerEnergy} ⚡️`);
+      log(`Placé ${selectedUnit}. Énergie restante: ${playerEnergy} ⚡️`);
       updateEnergyDisplay();
 
       aiTurn();
 
       if (playerEnergy <= 0 && aiEnergy <= 0) {
-        log('Plus d\'énergie. Lancement du combat...');
-        startBattle();
+        endPlacementPhase();
       }
     }
 
     function aiTurn() {
-      if (aiEnergy <= 0) {
-        log('IA n\'a plus d\'énergie.');
-        return;
-      }
-
+      if (aiEnergy <= 0) return;
       let affordable = Object.keys(unitStats).filter(u => unitStats[u].cost <= aiEnergy);
       if (affordable.length === 0) {
-        log('IA ne peut plus placer d\'unités.');
         aiEnergy = 0;
         updateEnergyDisplay();
         return;
       }
-
       const type = affordable[Math.floor(Math.random() * affordable.length)];
       const cost = unitStats[type].cost;
-
       const aiCells = [];
       for (let i = 0; i < 30; i++) {
         const row = Math.floor(i / 6);
         if (row >= 3 && !board[i]) aiCells.push(i);
       }
-
       if (aiCells.length === 0) {
-        log('IA n\'a plus de place.');
         aiEnergy = 0;
         updateEnergyDisplay();
         return;
       }
-
       const idx = aiCells[Math.floor(Math.random() * aiCells.length)];
       board[idx] = { type: type, hp: unitStats[type].hp };
       const cell = grid.children[idx];
       cell.classList.add(type, 'enemy');
       updateCellDisplay(idx);
       aiEnergy -= cost;
-      log(`IA a placé ${type} en cellule ${idx}. Énergie restante IA: ${aiEnergy} ⚡️`);
+      log(`IA a placé ${type}. Énergie IA: ${aiEnergy} ⚡️`);
       updateEnergyDisplay();
     }
 
+    function startNewGame() {
+      clearInterval(timerInterval);
+      timer = 15;
+      playerEnergy = 10;
+      aiEnergy = 10;
+      selectedUnit = null;
+      gameActive = true;
+      log('=== Nouvelle partie ===');
+      log('Tu as 15 secondes pour placer tes unités !');
+      initGrid();
+      updateEnergyDisplay();
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        timer--;
+        updateTimerDisplay();
+        if (timer <= 0) {
+          clearInterval(timerInterval);
+          log('Temps écoulé ! Fin du placement.');
+          endPlacementPhase();
+        }
+      }, 1000);
+    }
+
+    function endPlacementPhase() {
+      gameActive = false;
+      log('=== IA complète son placement ===');
+      while (aiEnergy > 0) {
+        aiTurn();
+      }
+      log('=== Combat automatique ===');
+      startBattle();
+    }
+
     function startBattle() {
-      log('=== COMBAT ===');
       for (let row = 0; row < 5; row++) {
         for (let col = 0; col < 6; col++) {
           const idx = row * 6 + col;
@@ -259,7 +274,6 @@ index.html
               updateCellDisplay(idx);
               updateCellDisplay(enemyIdx);
             }
-            log(`Combat en colonne ${col} : ${unit.type} vs ${enemy.type}`);
             if (unit.hp <= 0) {
               board[idx] = null;
               grid.children[idx].className = 'cell';
@@ -275,9 +289,6 @@ index.html
           }
         }
       }
-
-      log('Combat terminé !');
-
       let playerCount = 0;
       let aiCount = 0;
       for (let i = 0; i < 30; i++) {
@@ -287,16 +298,10 @@ index.html
           else if (row > 2) aiCount++;
         }
       }
-
       log(`Unités restantes - Joueur: ${playerCount}, IA: ${aiCount}`);
-
-      if (playerCount > aiCount) {
-        log('✅ Victoire du Joueur ! 🎉');
-      } else if (aiCount > playerCount) {
-        log('❌ Victoire de l\'IA !');
-      } else {
-        log('⚔️ Match nul !');
-      }
+      if (playerCount > aiCount) log('✅ Victoire du Joueur ! 🎉');
+      else if (aiCount > playerCount) log('❌ Victoire de l\'IA !');
+      else log('⚔️ Match nul !');
     }
 
     function getZoneClass(row) {
@@ -309,8 +314,6 @@ index.html
       logDiv.innerHTML += `<div>> ${message}</div>`;
       logDiv.scrollTop = logDiv.scrollHeight;
     }
-
-    updateEnergyDisplay();
   </script>
 </body>
 </html>
