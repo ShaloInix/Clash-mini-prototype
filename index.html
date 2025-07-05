@@ -1,0 +1,150 @@
+index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clash Mini Prototype - Phase 1</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #222;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(5, 60px);
+      grid-template-rows: repeat(4, 60px);
+      gap: 5px;
+      margin: 20px auto;
+      width: max-content;
+    }
+    .cell {
+      width: 60px;
+      height: 60px;
+      background-color: #444;
+      border: 1px solid #666;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .guerrier {
+      background-color: green;
+    }
+    .archer {
+      background-color: orange;
+    }
+    #units {
+      margin: 10px;
+    }
+    #log {
+      margin-top: 20px;
+      background: #333;
+      padding: 10px;
+      height: 100px;
+      overflow-y: auto;
+      text-align: left;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Clash Mini Lite - Phase 1</h1>
+  <div id="units">
+    <button onclick="selectUnit('guerrier')">Guerrier</button>
+    <button onclick="selectUnit('archer')">Archer</button>
+    <button onclick="startBattle()">Lancer le combat</button>
+  </div>
+  <div id="grid"></div>
+  <div id="log"></div>
+
+  <script>
+    const grid = document.getElementById('grid');
+    const logDiv = document.getElementById('log');
+    let selectedUnit = null;
+    let board = [];
+
+    const unitStats = {
+      guerrier: { hp: 10, attack: 3 },
+      archer: { hp: 6, attack: 5 }
+    };
+
+    // Build grid
+    for (let i = 0; i < 20; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.index = i;
+      cell.addEventListener('click', () => placeUnit(i));
+      grid.appendChild(cell);
+      board.push(null);
+    }
+
+    function selectUnit(type) {
+      selectedUnit = type;
+      log(`Sélectionné : ${type}`);
+    }
+
+    function placeUnit(index) {
+      if (!selectedUnit) {
+        log('Sélectionne d\'abord une unité !');
+        return;
+      }
+      if (board[index]) {
+        log('Cellule occupée !');
+        return;
+      }
+      board[index] = { type: selectedUnit, hp: unitStats[selectedUnit].hp };
+      const cell = grid.children[index];
+      cell.classList.add(selectedUnit);
+      cell.textContent = selectedUnit[0].toUpperCase();
+      log(`Placé ${selectedUnit} en cellule ${index}`);
+    }
+
+    function startBattle() {
+      log('=== COMBAT ===');
+      for (let row = 0; row < 4; row++) {
+        for (let col = 0; col < 5; col++) {
+          const idx = row * 5 + col;
+          const unit = board[idx];
+          const enemyIdx = (row + 1) * 5 + col;
+          if (unit && enemyIdx < 20 && board[enemyIdx]) {
+            const enemy = board[enemyIdx];
+            while (unit.hp > 0 && enemy.hp > 0) {
+              enemy.hp -= unitStats[unit.type].attack;
+              unit.hp -= unitStats[enemy.type].attack;
+            }
+            log(`Combat en colonne ${col} : ${unit.type} vs ${enemy.type}`);
+            if (unit.hp <= 0) {
+              board[idx] = null;
+              grid.children[idx].className = 'cell';
+              grid.children[idx].textContent = '';
+            }
+            if (enemy.hp <= 0) {
+              board[enemyIdx] = null;
+              grid.children[enemyIdx].className = 'cell';
+              grid.children[enemyIdx].textContent = '';
+            }
+          }
+        }
+      }
+      log('Combat terminé !');
+    }
+
+    function log(message) {
+      logDiv.innerHTML += `<div>> ${message}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+  </script>
+</body>
+</html>
