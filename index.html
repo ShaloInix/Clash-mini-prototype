@@ -4,7 +4,7 @@ index.html
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clash Mini Prototype - Ligne Neutre</title>
+  <title>Clash Mini Prototype - Avec Tank</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -51,6 +51,9 @@ index.html
     .archer {
       background-color: #fd7e14;
     }
+    .tank {
+      background-color: #6f42c1;
+    }
     .enemy {
       border: 2px dashed #dc3545;
     }
@@ -93,10 +96,11 @@ index.html
   </style>
 </head>
 <body>
-  <h1>Clash Mini Lite - Ligne Neutre</h1>
+  <h1>Clash Mini Lite - Avec Tank</h1>
   <div id="units">
     <button onclick="selectUnit('guerrier')">Guerrier</button>
     <button onclick="selectUnit('archer')">Archer</button>
+    <button onclick="selectUnit('tank')">Tank</button>
     <button onclick="startBattle()">Lancer le combat</button>
   </div>
   <div id="grid"></div>
@@ -110,7 +114,8 @@ index.html
 
     const unitStats = {
       guerrier: { hp: 10, attack: 3 },
-      archer: { hp: 6, attack: 5 }
+      archer: { hp: 6, attack: 5 },
+      tank: { hp: 20, attack: 2 }
     };
 
     // Build grid 6x5 = 30 cases avec zones
@@ -166,7 +171,15 @@ index.html
         const row = Math.floor(i / 6);
         if (row >= 3 && !board[i]) {
           if (Math.random() < 0.5) {
-            const type = Math.random() < 0.5 ? 'guerrier' : 'archer';
+            const rand = Math.random();
+            let type;
+            if (rand < 0.33) {
+              type = 'guerrier';
+            } else if (rand < 0.66) {
+              type = 'archer';
+            } else {
+              type = 'tank';
+            }
             board[i] = { type: type, hp: unitStats[type].hp };
             const cell = grid.children[i];
             cell.classList.add(type, 'enemy');
@@ -222,3 +235,4 @@ index.html
   </script>
 </body>
 </html>
+
