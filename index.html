@@ -18,9 +18,9 @@ index.html
       margin-bottom: 10px;
     }
     #grid {
-  display: grid;
-  grid-template-columns: repeat(6, 60px);
-  grid-template-rows: repeat(5, 60px);
+      display: grid;
+      grid-template-columns: repeat(6, 60px);
+      grid-template-rows: repeat(5, 60px);
       gap: 5px;
       margin: 20px auto;
       width: max-content;
@@ -80,8 +80,8 @@ index.html
       archer: { hp: 6, attack: 5 }
     };
 
-    // Build grid
-    for (let i = 0; i < 20; i++) {
+    // Build grid 6x5 = 30 cases
+    for (let i = 0; i < 30; i++) {
       const cell = document.createElement('div');
       cell.className = 'cell';
       cell.dataset.index = i;
@@ -113,12 +113,12 @@ index.html
 
     function startBattle() {
       log('=== COMBAT ===');
-      for (let row = 0; row < 4; row++) {
-        for (let col = 0; col < 5; col++) {
-          const idx = row * 5 + col;
-          const unit = board[idx];
-          const enemyIdx = (row + 1) * 5 + col;
-          if (unit && enemyIdx < 20 && board[enemyIdx]) {
+      for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 6; col++) {
+          const idx = row * 6 + col;
+          const enemyIdx = (row + 1) * 6 + col;
+          if (unit && enemyIdx < 30 && board[idx] && board[enemyIdx]) {
+            const unit = board[idx];
             const enemy = board[enemyIdx];
             while (unit.hp > 0 && enemy.hp > 0) {
               enemy.hp -= unitStats[unit.type].attack;
