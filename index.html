@@ -4,7 +4,7 @@ index.html
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clash Mini Prototype - Phase 1</title>
+  <title>Clash Mini Prototype - Phase 2 : IA</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -41,6 +41,9 @@ index.html
     .archer {
       background-color: orange;
     }
+    .enemy {
+      border: 2px dashed red;
+    }
     #units {
       margin: 10px;
     }
@@ -48,7 +51,7 @@ index.html
       margin-top: 20px;
       background: #333;
       padding: 10px;
-      height: 100px;
+      height: 120px;
       overflow-y: auto;
       text-align: left;
     }
@@ -60,7 +63,7 @@ index.html
   </style>
 </head>
 <body>
-  <h1>Clash Mini Lite - Phase 1</h1>
+  <h1>Clash Mini Lite - Phase 2 : IA ennemie</h1>
   <div id="units">
     <button onclick="selectUnit('guerrier')">Guerrier</button>
     <button onclick="selectUnit('archer')">Archer</button>
@@ -96,6 +99,13 @@ index.html
     }
 
     function placeUnit(index) {
+      // Bloquer placement dans la zone ennemie
+      const row = Math.floor(index / 6);
+      if (row >= 3) {
+        log('Zone ennemie ! Tu ne peux pas placer ici.');
+        return;
+      }
+
       if (!selectedUnit) {
         log('Sélectionne d\'abord une unité !');
         return;
@@ -111,13 +121,32 @@ index.html
       log(`Placé ${selectedUnit} en cellule ${index}`);
     }
 
+    function populateAI() {
+      log('L\'IA place ses unités...');
+      for (let i = 0; i < 30; i++) {
+        const row = Math.floor(i / 6);
+        if (row >= 3 && !board[i]) {
+          if (Math.random() < 0.5) {
+            const type = Math.random() < 0.5 ? 'guerrier' : 'archer';
+            board[i] = { type: type, hp: unitStats[type].hp };
+            const cell = grid.children[i];
+            cell.classList.add(type, 'enemy');
+            cell.textContent = type[0].toUpperCase();
+          }
+        }
+      }
+    }
+
     function startBattle() {
+      log('=== PHASE IA ===');
+      populateAI();
+
       log('=== COMBAT ===');
       for (let row = 0; row < 5; row++) {
         for (let col = 0; col < 6; col++) {
           const idx = row * 6 + col;
           const enemyIdx = (row + 1) * 6 + col;
-          if (unit && enemyIdx < 30 && board[idx] && board[enemyIdx]) {
+          if (idx < 30 && enemyIdx < 30 && board[idx] && board[enemyIdx]) {
             const unit = board[idx];
             const enemy = board[enemyIdx];
             while (unit.hp > 0 && enemy.hp > 0) {
