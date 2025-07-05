@@ -4,7 +4,7 @@ index.html
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clash Mini Prototype - Tour par tour & Energie</title>
+  <title>Clash Mini Prototype - PV visibles</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -45,6 +45,8 @@ index.html
       cursor: pointer;
       transition: background-color 0.2s ease;
       border-radius: 6px;
+      font-size: 0.9em;
+      text-align: center;
     }
     .cell:hover {
       background-color: #444;
@@ -100,7 +102,7 @@ index.html
   </style>
 </head>
 <body>
-  <h1>Clash Mini Lite - Tour par tour & Energie</h1>
+  <h1>Clash Mini Lite - PV visibles</h1>
   <div id="energy">Énergie Joueur: 10 ⚡️ | Énergie IA: 10 ⚡️</div>
   <div id="units">
     <button onclick="selectUnit('guerrier')">Guerrier (3⚡️)</button>
@@ -125,7 +127,6 @@ index.html
       tank: { hp: 20, attack: 2, cost: 5 }
     };
 
-    // Build grid 6x5 = 30 cases avec zones
     for (let i = 0; i < 30; i++) {
       const cell = document.createElement('div');
       cell.className = 'cell';
@@ -154,6 +155,16 @@ index.html
       log(`Sélectionné : ${type} (${unitStats[type].cost}⚡️)`);
     }
 
+    function updateCellDisplay(index) {
+      const cell = grid.children[index];
+      if (board[index]) {
+        const unit = board[index];
+        cell.textContent = unit.type[0].toUpperCase() + unit.hp;
+      } else {
+        cell.textContent = '';
+      }
+    }
+
     function placeUnit(index) {
       const row = Math.floor(index / 6);
       if (row >= 2) {
@@ -180,7 +191,7 @@ index.html
       board[index] = { type: selectedUnit, hp: unitStats[selectedUnit].hp };
       const cell = grid.children[index];
       cell.classList.add(selectedUnit);
-      cell.textContent = selectedUnit[0].toUpperCase();
+      updateCellDisplay(index);
       playerEnergy -= cost;
       log(`Placé ${selectedUnit} en cellule ${index}. Énergie restante: ${playerEnergy} ⚡️`);
       updateEnergyDisplay();
@@ -199,7 +210,6 @@ index.html
         return;
       }
 
-      // Choisir une unité aléatoire que l'IA peut se payer
       let affordable = Object.keys(unitStats).filter(u => unitStats[u].cost <= aiEnergy);
       if (affordable.length === 0) {
         log('IA ne peut plus placer d\'unités.');
@@ -211,7 +221,6 @@ index.html
       const type = affordable[Math.floor(Math.random() * affordable.length)];
       const cost = unitStats[type].cost;
 
-      // Trouver une case libre dans la zone IA
       const aiCells = [];
       for (let i = 0; i < 30; i++) {
         const row = Math.floor(i / 6);
@@ -229,7 +238,7 @@ index.html
       board[idx] = { type: type, hp: unitStats[type].hp };
       const cell = grid.children[idx];
       cell.classList.add(type, 'enemy');
-      cell.textContent = type[0].toUpperCase();
+      updateCellDisplay(idx);
       aiEnergy -= cost;
       log(`IA a placé ${type} en cellule ${idx}. Énergie restante IA: ${aiEnergy} ⚡️`);
       updateEnergyDisplay();
@@ -247,17 +256,21 @@ index.html
             while (unit.hp > 0 && enemy.hp > 0) {
               enemy.hp -= unitStats[unit.type].attack;
               unit.hp -= unitStats[enemy.type].attack;
+              updateCellDisplay(idx);
+              updateCellDisplay(enemyIdx);
             }
             log(`Combat en colonne ${col} : ${unit.type} vs ${enemy.type}`);
             if (unit.hp <= 0) {
               board[idx] = null;
               grid.children[idx].className = 'cell';
               grid.children[idx].classList.add(getZoneClass(Math.floor(idx / 6)));
+              grid.children[idx].textContent = '';
             }
             if (enemy.hp <= 0) {
               board[enemyIdx] = null;
               grid.children[enemyIdx].className = 'cell';
               grid.children[enemyIdx].classList.add(getZoneClass(Math.floor(enemyIdx / 6)));
+              grid.children[enemyIdx].textContent = '';
             }
           }
         }
@@ -265,7 +278,6 @@ index.html
 
       log('Combat terminé !');
 
-      // Comptage des survivants
       let playerCount = 0;
       let aiCount = 0;
       for (let i = 0; i < 30; i++) {
