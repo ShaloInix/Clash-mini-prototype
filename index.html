@@ -4,7 +4,7 @@ index.html
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gridlords - Prototype</title>
+  <title>Gridlords - Prototype Animé</title>
   <style>
     :root {
       --accent-color: #00bfff;
@@ -70,7 +70,6 @@ index.html
       padding: 8px;
       border-radius: 12px;
       box-shadow: 0 0 10px #0006;
-      transition: all 0.3s ease;
     }
 
     .cell {
@@ -84,7 +83,14 @@ index.html
       cursor: pointer;
       border-radius: 8px;
       font-size: 0.85em;
-      transition: background-color 0.2s, transform 0.1s;
+      transition: background-color 0.2s, transform 0.15s;
+      opacity: 0;
+      animation: fadePop 0.4s forwards;
+    }
+
+    .cell.filled {
+      opacity: 1;
+      animation: fadePop 0.4s forwards;
     }
 
     .cell:hover {
@@ -118,7 +124,7 @@ index.html
       background-color: var(--button-bg);
       color: #fff;
       font-size: 1em;
-      transition: background-color 0.2s, transform 0.1s;
+      transition: background-color 0.2s, transform 0.15s;
       box-shadow: 0 2px 5px #0005;
     }
 
@@ -137,11 +143,22 @@ index.html
       border-radius: 8px;
       font-size: 0.95em;
       box-shadow: inset 0 0 5px #0006;
+      transition: all 0.3s ease;
+    }
+
+    #log div {
+      opacity: 0;
+      animation: fadeIn 0.5s forwards;
     }
 
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
+    }
+
+    @keyframes fadePop {
+      0% { opacity: 0; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1); }
     }
   </style>
 </head>
@@ -171,8 +188,21 @@ index.html
   </div>
 
   <script>
-    // ... (entier reste identique)
-    // Garde ton JavaScript existant tel quel pour la logique
+    // Ta logique JavaScript reste identique
+    // Mais tu vas ajouter ceci dans updateCellDisplay pour déclencher l'animation
+
+    function updateCellDisplay(index) {
+      const cell = grid.children[index];
+      if (board[index]) {
+        const unit = board[index];
+        cell.classList.add('filled');
+        cell.textContent = unit.type[0].toUpperCase() + unit.hp;
+      } else {
+        cell.textContent = '';
+        cell.classList.remove('filled');
+      }
+    }
   </script>
 </body>
 </html>
+
