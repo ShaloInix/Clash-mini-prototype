@@ -4,7 +4,7 @@ index.html
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clash Mini Prototype - Nouvelle Partie + Timer</title>
+  <title>Gridlords - Prototype</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -16,11 +16,29 @@ index.html
     }
     h1 {
       margin-bottom: 10px;
-      font-size: 1.8em;
+      font-size: 2em;
+      letter-spacing: 2px;
     }
     #energy, #timer {
       margin: 10px;
       font-size: 1.2em;
+    }
+    #welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 90vh;
+    }
+    #welcome h1 {
+      font-size: 3em;
+      margin-bottom: 10px;
+      color: #00bfff;
+    }
+    #welcome p {
+      font-size: 1.2em;
+      margin-bottom: 20px;
+      color: #ccc;
     }
     #grid {
       display: grid;
@@ -48,9 +66,7 @@ index.html
       font-size: 0.9em;
       text-align: center;
     }
-    .cell:hover {
-      background-color: #444;
-    }
+    .cell:hover { background-color: #444; }
     .guerrier { background-color: #28a745; }
     .archer { background-color: #fd7e14; }
     .tank { background-color: #6f42c1; }
@@ -84,23 +100,37 @@ index.html
   </style>
 </head>
 <body>
-  <h1>Clash Mini Lite - Nouvelle Partie + Timer</h1>
-  <div id="energy">Énergie Joueur: 10 ⚡️ | Énergie IA: 10 ⚡️</div>
-  <div id="timer">Temps restant : -</div>
-  <div id="units">
-    <button onclick="selectUnit('guerrier')">Guerrier (3⚡️)</button>
-    <button onclick="selectUnit('archer')">Archer (4⚡️)</button>
-    <button onclick="selectUnit('tank')">Tank (5⚡️)</button>
-    <button onclick="startNewGame()">Nouvelle Partie</button>
+
+  <!-- ✅ Welcome Screen -->
+  <div id="welcome">
+    <h1>GRIDLORDS</h1>
+    <p>Tactics & Strategy Auto-Battler</p>
+    <button onclick="startFromWelcome()">Jouer</button>
   </div>
-  <div id="grid"></div>
-  <div id="log"></div>
+
+  <!-- ✅ Game UI -->
+  <div id="gameUI" style="display:none;">
+    <h1>Gridlords - Match</h1>
+    <div id="energy">Énergie Joueur: 10 ⚡️ | Énergie IA: 10 ⚡️</div>
+    <div id="timer">Temps restant : -</div>
+    <div id="units">
+      <button onclick="selectUnit('guerrier')">Guerrier (3⚡️)</button>
+      <button onclick="selectUnit('archer')">Archer (4⚡️)</button>
+      <button onclick="selectUnit('tank')">Tank (5⚡️)</button>
+      <button onclick="startNewGame()">Nouvelle Partie</button>
+    </div>
+    <div id="grid"></div>
+    <div id="log"></div>
+  </div>
 
   <script>
     const grid = document.getElementById('grid');
     const logDiv = document.getElementById('log');
     const energyDiv = document.getElementById('energy');
     const timerDiv = document.getElementById('timer');
+    const welcomeDiv = document.getElementById('welcome');
+    const gameUIDiv = document.getElementById('gameUI');
+
     let selectedUnit = null;
     let board = [];
     let playerEnergy = 10;
@@ -114,6 +144,12 @@ index.html
       archer: { hp: 6, attack: 5, cost: 4 },
       tank: { hp: 20, attack: 2, cost: 5 }
     };
+
+    function startFromWelcome() {
+      welcomeDiv.style.display = "none";
+      gameUIDiv.style.display = "block";
+      startNewGame();
+    }
 
     function initGrid() {
       grid.innerHTML = '';
@@ -234,6 +270,7 @@ index.html
       aiEnergy = 10;
       selectedUnit = null;
       gameActive = true;
+      logDiv.innerHTML = '';
       log('=== Nouvelle partie ===');
       log('Tu as 15 secondes pour placer tes unités !');
       initGrid();
@@ -317,4 +354,5 @@ index.html
   </script>
 </body>
 </html>
+
 
