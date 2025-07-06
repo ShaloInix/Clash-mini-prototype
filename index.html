@@ -9,19 +9,20 @@ index.html
     body {
       font-family: Arial, sans-serif;
       background-color: #111;
-      color: #fff;
+      color: #eee;
       margin: 0;
       padding: 20px;
       text-align: center;
     }
     h1 {
       margin-bottom: 10px;
-      font-size: 2em;
+      font-size: 2.2em;
       letter-spacing: 2px;
+      color: #00bfff;
     }
     #energy, #timer {
       margin: 10px;
-      font-size: 1.2em;
+      font-size: 1.1em;
     }
     #welcome {
       display: flex;
@@ -61,15 +62,15 @@ index.html
       font-weight: bold;
       color: #fff;
       cursor: pointer;
-      transition: background-color 0.2s ease;
       border-radius: 6px;
-      font-size: 0.9em;
-      text-align: center;
+      font-size: 0.85em;
+      transition: background-color 0.2s ease;
     }
     .cell:hover { background-color: #444; }
     .guerrier { background-color: #28a745; }
     .archer { background-color: #fd7e14; }
     .tank { background-color: #6f42c1; }
+    .mage { background-color: #1e90ff; }
     .enemy { border: 2px dashed #dc3545; }
     .player-zone { background-color: rgba(40, 167, 69, 0.15); }
     .ai-zone { background-color: rgba(220, 53, 69, 0.15); }
@@ -80,7 +81,7 @@ index.html
       margin: 5px;
       cursor: pointer;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px;
       background-color: #007bff;
       color: #fff;
       font-size: 1em;
@@ -101,14 +102,14 @@ index.html
 </head>
 <body>
 
-  <!-- ✅ Welcome Screen -->
+  <!-- Welcome Screen -->
   <div id="welcome">
     <h1>GRIDLORDS</h1>
     <p>Tactics & Strategy Auto-Battler</p>
     <button onclick="startFromWelcome()">Jouer</button>
   </div>
 
-  <!-- ✅ Game UI -->
+  <!-- Game UI -->
   <div id="gameUI" style="display:none;">
     <h1>Gridlords - Match</h1>
     <div id="energy">Énergie Joueur: 10 ⚡️ | Énergie IA: 10 ⚡️</div>
@@ -117,6 +118,7 @@ index.html
       <button onclick="selectUnit('guerrier')">Guerrier (3⚡️)</button>
       <button onclick="selectUnit('archer')">Archer (4⚡️)</button>
       <button onclick="selectUnit('tank')">Tank (5⚡️)</button>
+      <button onclick="selectUnit('mage')">Mage (5⚡️)</button>
       <button onclick="startNewGame()">Nouvelle Partie</button>
     </div>
     <div id="grid"></div>
@@ -141,8 +143,9 @@ index.html
 
     const unitStats = {
       guerrier: { hp: 10, attack: 3, cost: 3 },
-      archer: { hp: 6, attack: 5, cost: 4 },
-      tank: { hp: 20, attack: 2, cost: 5 }
+      archer: { hp: 7, attack: 5, cost: 4 },
+      tank: { hp: 20, attack: 2, cost: 5 },
+      mage: { hp: 8, attack: 7, cost: 5 }
     };
 
     function startFromWelcome() {
