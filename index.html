@@ -4,7 +4,7 @@ index.html
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gridlords - Prototype Animé</title>
+  <title>Gridlords - Prototype</title>
   <style>
     :root {
       --accent-color: #00bfff;
@@ -84,12 +84,10 @@ index.html
       border-radius: 8px;
       font-size: 0.85em;
       transition: background-color 0.2s, transform 0.15s;
-      opacity: 0;
-      animation: fadePop 0.4s forwards;
+      opacity: 1;
     }
 
     .cell.filled {
-      opacity: 1;
       animation: fadePop 0.4s forwards;
     }
 
@@ -143,7 +141,6 @@ index.html
       border-radius: 8px;
       font-size: 0.95em;
       box-shadow: inset 0 0 5px #0006;
-      transition: all 0.3s ease;
     }
 
     #log div {
@@ -188,19 +185,229 @@ index.html
   </div>
 
   <script>
-    // Ta logique JavaScript reste identique
-    // Mais tu vas ajouter ceci dans updateCellDisplay pour déclencher l'animation
+    const grid = document.getElementById('grid');
+    const logDiv = document.getElementById('log');
+    const energyDiv = document.getElementById('energy');
+    const timerDiv = document.getElementById('timer');
+    const welcomeDiv = document.getElementById('welcome');
+    const gameUIDiv = document.getElementById('gameUI');
+
+    let selectedUnit = null;
+    let board = [];
+    let playerEnergy = 10;
+    let aiEnergy = 10;
+    let timer = 15;
+    let timerInterval = null;
+    let gameActive = false;
+
+    const unitStats = {
+      guerrier: { hp: 10, attack: 3, cost: 3 },
+      archer: { hp: 7, attack: 5, cost: 4 },
+      tank: { hp: 20, attack: 2, cost: 5 },
+      mage: { hp: 8, attack: 7, cost: 5 }
+    };
+
+    function startFromWelcome() {
+      welcomeDiv.style.display = "none";
+      gameUIDiv.style.display = "block";
+      startNewGame();
+    }
+
+    function initGrid() {
+      grid.innerHTML = '';
+      board = [];
+      for (let i = 0; i < 30; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        const row = Math.floor(i / 6);
+        if (row < 2) cell.classList.add('player-zone');
+        else if (row === 2) cell.classList.add('neutral-zone');
+        else cell.classList.add('ai-zone');
+        cell.dataset.index = i;
+        cell.addEventListener('click', () => placeUnit(i));
+        grid.appendChild(cell);
+        board.push(null);
+      }
+    }
+
+    function updateEnergyDisplay() {
+      energyDiv.textContent = `Énergie Joueur: ${playerEnergy} ⚡️ | Énergie IA: ${aiEnergy} ⚡️`;
+    }
+
+    function updateTimerDisplay() {
+      timerDiv.textContent = `Temps restant : ${timer}s`;
+    }
+
+    function selectUnit(type) {
+      if (!gameActive) {
+        log('Lance une nouvelle partie pour commencer !');
+        return;
+      }
+      selectedUnit = type;
+      log(`Sélectionné : ${type} (${unitStats[type].cost}⚡️)`);
+    }
 
     function updateCellDisplay(index) {
       const cell = grid.children[index];
       if (board[index]) {
         const unit = board[index];
-        cell.classList.add('filled');
+        cell.classList.add('filled', unit.type);
         cell.textContent = unit.type[0].toUpperCase() + unit.hp;
       } else {
         cell.textContent = '';
-        cell.classList.remove('filled');
+        cell.className = 'cell';
+        const row = Math.floor(index / 6);
+        cell.classList.add(getZoneClass(row));
       }
+    }
+
+    function placeUnit(index) {
+      if (!gameActive) {
+        log('La partie n\'a pas commencé ! Appuie sur Nouvelle Partie.');
+        return;
+      }
+      const row = Math.floor(index / 6);
+      if (row >= 2) {
+        log('Zone interdite !');
+        return;
+      }
+      if (!selectedUnit) {
+        log('Sélectionne une unité !');
+        return;
+      }
+      const cost = unitStats[selectedUnit].cost;
+      if (playerEnergy < cost) {
+        log('Pas assez d\'énergie !');
+        return;
+      }
+      if (board[index]) {
+        log('Cellule occupée !');
+        return;
+      }
+      board[index] = { type: selectedUnit, hp: unitStats[selectedUnit].hp };
+      updateCellDisplay(index);
+      playerEnergy -= cost;
+      log(`Placé ${selectedUnit}. Énergie restante: ${playerEnergy} ⚡️`);
+      updateEnergyDisplay();
+
+      aiTurn();
+
+      if (playerEnergy <= 0 && aiEnergy <= 0) {
+        endPlacementPhase();
+      }
+    }
+
+    function aiTurn() {
+      if (aiEnergy <= 0) return;
+      let affordable = Object.keys(unitStats).filter(u => unitStats[u].cost <= aiEnergy);
+      if (affordable.length === 0) {
+        aiEnergy = 0;
+        updateEnergyDisplay();
+        return;
+      }
+      const type = affordable[Math.floor(Math.random() * affordable.length)];
+      const cost = unitStats[type].cost;
+      const aiCells = [];
+      for (let i = 0; i < 30; i++) {
+        const row = Math.floor(i / 6);
+        if (row >= 3 && !board[i]) aiCells.push(i);
+      }
+      if (aiCells.length === 0) {
+        aiEnergy = 0;
+        updateEnergyDisplay();
+        return;
+      }
+      const idx = aiCells[Math.floor(Math.random() * aiCells.length)];
+      board[idx] = { type: type, hp: unitStats[type].hp };
+      updateCellDisplay(idx);
+      aiEnergy -= cost;
+      log(`IA a placé ${type}. Énergie IA: ${aiEnergy} ⚡️`);
+      updateEnergyDisplay();
+    }
+
+    function startNewGame() {
+      clearInterval(timerInterval);
+      timer = 15;
+      playerEnergy = 10;
+      aiEnergy = 10;
+      selectedUnit = null;
+      gameActive = true;
+      logDiv.innerHTML = '';
+      log('=== Nouvelle partie ===');
+      log('Tu as 15 secondes pour placer tes unités !');
+      initGrid();
+      updateEnergyDisplay();
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        timer--;
+        updateTimerDisplay();
+        if (timer <= 0) {
+          clearInterval(timerInterval);
+          log('Temps écoulé ! Fin du placement.');
+          endPlacementPhase();
+        }
+      }, 1000);
+    }
+
+    function endPlacementPhase() {
+      gameActive = false;
+      log('=== IA complète son placement ===');
+      while (aiEnergy > 0) {
+        aiTurn();
+      }
+      log('=== Combat automatique ===');
+      startBattle();
+    }
+
+    function startBattle() {
+      for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 6; col++) {
+          const idx = row * 6 + col;
+          const enemyIdx = (row + 1) * 6 + col;
+          if (idx < 30 && enemyIdx < 30 && board[idx] && board[enemyIdx]) {
+            const unit = board[idx];
+            const enemy = board[enemyIdx];
+            while (unit.hp > 0 && enemy.hp > 0) {
+              enemy.hp -= unitStats[unit.type].attack;
+              unit.hp -= unitStats[enemy.type].attack;
+              updateCellDisplay(idx);
+              updateCellDisplay(enemyIdx);
+            }
+            if (unit.hp <= 0) {
+              board[idx] = null;
+              updateCellDisplay(idx);
+            }
+            if (enemy.hp <= 0) {
+              board[enemyIdx] = null;
+              updateCellDisplay(enemyIdx);
+            }
+          }
+        }
+      }
+      let playerCount = 0;
+      let aiCount = 0;
+      for (let i = 0; i < 30; i++) {
+        const row = Math.floor(i / 6);
+        if (board[i]) {
+          if (row < 2) playerCount++;
+          else if (row > 2) aiCount++;
+        }
+      }
+      log(`Unités restantes - Joueur: ${playerCount}, IA: ${aiCount}`);
+      if (playerCount > aiCount) log('✅ Victoire du Joueur ! 🎉');
+      else if (aiCount > playerCount) log('❌ Victoire de l\'IA !');
+      else log('⚔️ Match nul !');
+    }
+
+    function getZoneClass(row) {
+      if (row < 2) return 'player-zone';
+      if (row === 2) return 'neutral-zone';
+      return 'ai-zone';
+    }
+
+    function log(message) {
+      logDiv.innerHTML += `<div>> ${message}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
     }
   </script>
 </body>
