@@ -6,53 +6,73 @@ index.html
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gridlords - Prototype</title>
   <style>
+    :root {
+      --accent-color: #00bfff;
+      --bg-dark: #111;
+      --bg-light: #222;
+      --text-light: #eee;
+      --button-bg: #007bff;
+      --button-hover: #0056b3;
+      --cell-hover: #444;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background-color: #111;
-      color: #eee;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-light);
       margin: 0;
       padding: 20px;
       text-align: center;
     }
+
     h1 {
       margin-bottom: 10px;
-      font-size: 2.2em;
-      letter-spacing: 2px;
-      color: #00bfff;
+      font-size: 2.4em;
+      letter-spacing: 1px;
+      color: var(--accent-color);
+      text-shadow: 0 0 5px #00bfff66;
     }
+
     #energy, #timer {
       margin: 10px;
       font-size: 1.1em;
     }
+
     #welcome {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 90vh;
+      animation: fadeIn 1s;
     }
+
     #welcome h1 {
       font-size: 3em;
       margin-bottom: 10px;
-      color: #00bfff;
+      color: var(--accent-color);
     }
+
     #welcome p {
       font-size: 1.2em;
       margin-bottom: 20px;
       color: #ccc;
     }
+
     #grid {
       display: grid;
       grid-template-columns: repeat(6, minmax(40px, 60px));
       grid-template-rows: repeat(5, 60px);
       gap: 5px;
       margin: 20px auto;
-      width: 95%;
       max-width: 380px;
-      background-color: #222;
-      padding: 5px;
-      border-radius: 10px;
+      background-color: var(--bg-light);
+      padding: 8px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #0006;
+      transition: all 0.3s ease;
     }
+
     .cell {
       background-color: #333;
       border: 1px solid #555;
@@ -62,41 +82,66 @@ index.html
       font-weight: bold;
       color: #fff;
       cursor: pointer;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 0.85em;
-      transition: background-color 0.2s ease;
+      transition: background-color 0.2s, transform 0.1s;
     }
-    .cell:hover { background-color: #444; }
+
+    .cell:hover {
+      background-color: var(--cell-hover);
+      transform: scale(1.05);
+    }
+
     .guerrier { background-color: #28a745; }
     .archer { background-color: #fd7e14; }
     .tank { background-color: #6f42c1; }
     .mage { background-color: #1e90ff; }
     .enemy { border: 2px dashed #dc3545; }
-    .player-zone { background-color: rgba(40, 167, 69, 0.15); }
-    .ai-zone { background-color: rgba(220, 53, 69, 0.15); }
-    .neutral-zone { background-color: rgba(255, 255, 255, 0.05); }
-    #units { margin: 15px; }
+
+    .player-zone { background-color: rgba(40, 167, 69, 0.12); }
+    .ai-zone { background-color: rgba(220, 53, 69, 0.12); }
+    .neutral-zone { background-color: rgba(255, 255, 255, 0.04); }
+
+    #units {
+      margin: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
     button {
       padding: 10px 20px;
       margin: 5px;
       cursor: pointer;
       border: none;
-      border-radius: 8px;
-      background-color: #007bff;
+      border-radius: 10px;
+      background-color: var(--button-bg);
       color: #fff;
       font-size: 1em;
-      transition: background-color 0.2s ease;
+      transition: background-color 0.2s, transform 0.1s;
+      box-shadow: 0 2px 5px #0005;
     }
-    button:hover { background-color: #0056b3; }
+
+    button:hover {
+      background-color: var(--button-hover);
+      transform: scale(1.05);
+    }
+
     #log {
       margin-top: 20px;
-      background: #222;
-      padding: 10px;
+      background: var(--bg-light);
+      padding: 12px;
       height: 140px;
       overflow-y: auto;
       text-align: left;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 0.95em;
+      box-shadow: inset 0 0 5px #0006;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
   </style>
 </head>
@@ -126,236 +171,8 @@ index.html
   </div>
 
   <script>
-    const grid = document.getElementById('grid');
-    const logDiv = document.getElementById('log');
-    const energyDiv = document.getElementById('energy');
-    const timerDiv = document.getElementById('timer');
-    const welcomeDiv = document.getElementById('welcome');
-    const gameUIDiv = document.getElementById('gameUI');
-
-    let selectedUnit = null;
-    let board = [];
-    let playerEnergy = 10;
-    let aiEnergy = 10;
-    let timer = 15;
-    let timerInterval = null;
-    let gameActive = false;
-
-    const unitStats = {
-      guerrier: { hp: 10, attack: 3, cost: 3 },
-      archer: { hp: 7, attack: 5, cost: 4 },
-      tank: { hp: 20, attack: 2, cost: 5 },
-      mage: { hp: 8, attack: 7, cost: 5 }
-    };
-
-    function startFromWelcome() {
-      welcomeDiv.style.display = "none";
-      gameUIDiv.style.display = "block";
-      startNewGame();
-    }
-
-    function initGrid() {
-      grid.innerHTML = '';
-      board = [];
-      for (let i = 0; i < 30; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        const row = Math.floor(i / 6);
-        if (row < 2) cell.classList.add('player-zone');
-        else if (row === 2) cell.classList.add('neutral-zone');
-        else cell.classList.add('ai-zone');
-        cell.dataset.index = i;
-        cell.addEventListener('click', () => placeUnit(i));
-        grid.appendChild(cell);
-        board.push(null);
-      }
-    }
-
-    function updateEnergyDisplay() {
-      energyDiv.textContent = `Énergie Joueur: ${playerEnergy} ⚡️ | Énergie IA: ${aiEnergy} ⚡️`;
-    }
-
-    function updateTimerDisplay() {
-      timerDiv.textContent = `Temps restant : ${timer}s`;
-    }
-
-    function selectUnit(type) {
-      if (!gameActive) {
-        log('Lance une nouvelle partie pour commencer !');
-        return;
-      }
-      selectedUnit = type;
-      log(`Sélectionné : ${type} (${unitStats[type].cost}⚡️)`);
-    }
-
-    function updateCellDisplay(index) {
-      const cell = grid.children[index];
-      if (board[index]) {
-        const unit = board[index];
-        cell.textContent = unit.type[0].toUpperCase() + unit.hp;
-      } else {
-        cell.textContent = '';
-      }
-    }
-
-    function placeUnit(index) {
-      if (!gameActive) {
-        log('La partie n\'a pas commencé ! Appuie sur Nouvelle Partie.');
-        return;
-      }
-      const row = Math.floor(index / 6);
-      if (row >= 2) {
-        log('Zone interdite !');
-        return;
-      }
-      if (!selectedUnit) {
-        log('Sélectionne une unité !');
-        return;
-      }
-      const cost = unitStats[selectedUnit].cost;
-      if (playerEnergy < cost) {
-        log('Pas assez d\'énergie !');
-        return;
-      }
-      if (board[index]) {
-        log('Cellule occupée !');
-        return;
-      }
-      board[index] = { type: selectedUnit, hp: unitStats[selectedUnit].hp };
-      const cell = grid.children[index];
-      cell.classList.add(selectedUnit);
-      updateCellDisplay(index);
-      playerEnergy -= cost;
-      log(`Placé ${selectedUnit}. Énergie restante: ${playerEnergy} ⚡️`);
-      updateEnergyDisplay();
-
-      aiTurn();
-
-      if (playerEnergy <= 0 && aiEnergy <= 0) {
-        endPlacementPhase();
-      }
-    }
-
-    function aiTurn() {
-      if (aiEnergy <= 0) return;
-      let affordable = Object.keys(unitStats).filter(u => unitStats[u].cost <= aiEnergy);
-      if (affordable.length === 0) {
-        aiEnergy = 0;
-        updateEnergyDisplay();
-        return;
-      }
-      const type = affordable[Math.floor(Math.random() * affordable.length)];
-      const cost = unitStats[type].cost;
-      const aiCells = [];
-      for (let i = 0; i < 30; i++) {
-        const row = Math.floor(i / 6);
-        if (row >= 3 && !board[i]) aiCells.push(i);
-      }
-      if (aiCells.length === 0) {
-        aiEnergy = 0;
-        updateEnergyDisplay();
-        return;
-      }
-      const idx = aiCells[Math.floor(Math.random() * aiCells.length)];
-      board[idx] = { type: type, hp: unitStats[type].hp };
-      const cell = grid.children[idx];
-      cell.classList.add(type, 'enemy');
-      updateCellDisplay(idx);
-      aiEnergy -= cost;
-      log(`IA a placé ${type}. Énergie IA: ${aiEnergy} ⚡️`);
-      updateEnergyDisplay();
-    }
-
-    function startNewGame() {
-      clearInterval(timerInterval);
-      timer = 15;
-      playerEnergy = 10;
-      aiEnergy = 10;
-      selectedUnit = null;
-      gameActive = true;
-      logDiv.innerHTML = '';
-      log('=== Nouvelle partie ===');
-      log('Tu as 15 secondes pour placer tes unités !');
-      initGrid();
-      updateEnergyDisplay();
-      updateTimerDisplay();
-      timerInterval = setInterval(() => {
-        timer--;
-        updateTimerDisplay();
-        if (timer <= 0) {
-          clearInterval(timerInterval);
-          log('Temps écoulé ! Fin du placement.');
-          endPlacementPhase();
-        }
-      }, 1000);
-    }
-
-    function endPlacementPhase() {
-      gameActive = false;
-      log('=== IA complète son placement ===');
-      while (aiEnergy > 0) {
-        aiTurn();
-      }
-      log('=== Combat automatique ===');
-      startBattle();
-    }
-
-    function startBattle() {
-      for (let row = 0; row < 5; row++) {
-        for (let col = 0; col < 6; col++) {
-          const idx = row * 6 + col;
-          const enemyIdx = (row + 1) * 6 + col;
-          if (idx < 30 && enemyIdx < 30 && board[idx] && board[enemyIdx]) {
-            const unit = board[idx];
-            const enemy = board[enemyIdx];
-            while (unit.hp > 0 && enemy.hp > 0) {
-              enemy.hp -= unitStats[unit.type].attack;
-              unit.hp -= unitStats[enemy.type].attack;
-              updateCellDisplay(idx);
-              updateCellDisplay(enemyIdx);
-            }
-            if (unit.hp <= 0) {
-              board[idx] = null;
-              grid.children[idx].className = 'cell';
-              grid.children[idx].classList.add(getZoneClass(Math.floor(idx / 6)));
-              grid.children[idx].textContent = '';
-            }
-            if (enemy.hp <= 0) {
-              board[enemyIdx] = null;
-              grid.children[enemyIdx].className = 'cell';
-              grid.children[enemyIdx].classList.add(getZoneClass(Math.floor(enemyIdx / 6)));
-              grid.children[enemyIdx].textContent = '';
-            }
-          }
-        }
-      }
-      let playerCount = 0;
-      let aiCount = 0;
-      for (let i = 0; i < 30; i++) {
-        const row = Math.floor(i / 6);
-        if (board[i]) {
-          if (row < 2) playerCount++;
-          else if (row > 2) aiCount++;
-        }
-      }
-      log(`Unités restantes - Joueur: ${playerCount}, IA: ${aiCount}`);
-      if (playerCount > aiCount) log('✅ Victoire du Joueur ! 🎉');
-      else if (aiCount > playerCount) log('❌ Victoire de l\'IA !');
-      else log('⚔️ Match nul !');
-    }
-
-    function getZoneClass(row) {
-      if (row < 2) return 'player-zone';
-      if (row === 2) return 'neutral-zone';
-      return 'ai-zone';
-    }
-
-    function log(message) {
-      logDiv.innerHTML += `<div>> ${message}</div>`;
-      logDiv.scrollTop = logDiv.scrollHeight;
-    }
+    // ... (entier reste identique)
+    // Garde ton JavaScript existant tel quel pour la logique
   </script>
 </body>
 </html>
-
-
